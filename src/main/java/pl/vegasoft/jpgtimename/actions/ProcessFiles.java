@@ -75,7 +75,6 @@ public class ProcessFiles extends AbstractAction {
         }
 		
 		System.out.println("Finished");
-		
 	}
 
 }
