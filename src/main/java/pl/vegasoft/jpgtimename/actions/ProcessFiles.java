@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.LocalDateTime;
 import pl.vegasoft.jpgtimename.FileListModel;
 import pl.vegasoft.jpgtimename.readers.ExifIFD0Reader;
+import pl.vegasoft.jpgtimename.readers.ExifSubIfDReader;
 import pl.vegasoft.jpgtimename.tools.AbstractMetadataDirectoryReader;
 import pl.vegasoft.jpgtimename.tools.FileNamer;
 
@@ -34,7 +35,8 @@ public class ProcessFiles extends AbstractAction {
     private List<ErrorsListener> m_errorListeners = new CopyOnWriteArrayList<ErrorsListener>();
 
     private final List<? extends AbstractMetadataDirectoryReader> READERS = ImmutableList.of(
-            new ExifIFD0Reader()
+            new ExifIFD0Reader(),
+            new ExifSubIfDReader()
     );
 
     public ProcessFiles(FileListModel model, FileNamer namer) {
@@ -100,6 +102,13 @@ public class ProcessFiles extends AbstractAction {
 	}
 
     private Date tryToGetDateTimeFromMetadata(Metadata metadata) {
+        for (Directory dir : metadata.getDirectories()) {
+            System.out.println("-------------------------Directory: " + dir.getName());
+            for (Tag tag : dir.getTags()) {
+                System.out.println(tag.getTagName());
+            }
+        }
+
         for(AbstractMetadataDirectoryReader reader : READERS) {
             Date date = reader.tryGetPhotoTakenDate(metadata);
 
