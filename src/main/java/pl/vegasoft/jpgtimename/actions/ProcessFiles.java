@@ -102,13 +102,6 @@ public class ProcessFiles extends AbstractAction {
 	}
 
     private Date tryToGetDateTimeFromMetadata(Metadata metadata) {
-        for (Directory dir : metadata.getDirectories()) {
-            System.out.println("-------------------------Directory: " + dir.getName());
-            for (Tag tag : dir.getTags()) {
-                System.out.println(tag.getTagName());
-            }
-        }
-
         for(AbstractMetadataDirectoryReader reader : READERS) {
             Date date = reader.tryGetPhotoTakenDate(metadata);
 
