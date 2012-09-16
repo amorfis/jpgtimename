@@ -21,6 +21,7 @@ import pl.vegasoft.jpgtimename.actions.AddFiles;
 import pl.vegasoft.jpgtimename.actions.ErrorsListener;
 import pl.vegasoft.jpgtimename.actions.ProcessFiles;
 import pl.vegasoft.jpgtimename.actions.RemoveFiles;
+import pl.vegasoft.jpgtimename.tools.FileNamer;
 
 public class FilesWindow extends JFrame {
 	
@@ -41,7 +42,7 @@ public class FilesWindow extends JFrame {
 		panel.add(new JButton(new AddFiles((FileListModel) m_filesList.getModel())));
 		panel.add(new JButton(new RemoveFiles(m_filesList)));
 		
-		ProcessFiles action = new ProcessFiles((FileListModel) m_filesList.getModel());
+		ProcessFiles action = new ProcessFiles((FileListModel) m_filesList.getModel(), new FileNamer());
 		action.addErrorListener(new ErrorsListener() {
 
 			public void errorHappend(String message) {

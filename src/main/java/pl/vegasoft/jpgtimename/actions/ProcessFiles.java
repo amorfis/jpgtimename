@@ -8,7 +8,9 @@ import com.drew.metadata.exif.CanonMakernoteDirectory;
 import com.drew.metadata.exif.ExifIFD0Directory;
 import com.drew.metadata.jpeg.JpegDirectory;
 import com.google.common.collect.ImmutableList;
+import org.joda.time.LocalDateTime;
 import pl.vegasoft.jpgtimename.FileListModel;
+import pl.vegasoft.jpgtimename.tools.FileNamer;
 
 import javax.swing.*;
 import javax.swing.text.DateFormatter;
@@ -24,17 +26,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ProcessFiles extends AbstractAction {
 	
 	private FileListModel m_model;
-	
-	private List<ErrorsListener> m_errorListeners = new CopyOnWriteArrayList<ErrorsListener>();
+    private FileNamer namer;
+
+    private List<ErrorsListener> m_errorListeners = new CopyOnWriteArrayList<ErrorsListener>();
     private static final List<Class<? extends Directory>> DIRECTORY_CLASSES = ImmutableList.<Class<? extends Directory>>of(
             ExifIFD0Directory.class,
             CanonMakernoteDirectory.class,
             JpegDirectory.class
     );
 
-    public ProcessFiles(FileListModel model) {
+    public ProcessFiles(FileListModel model, FileNamer namer) {
 		m_model = model;
-		putValue(Action.NAME, "Process files");
+        this.namer = namer;
+        putValue(Action.NAME, "Process files");
 	}
 	
 	public void addErrorListener(ErrorsListener listener) {
@@ -68,20 +72,23 @@ public class ProcessFiles extends AbstractAction {
 
                 if (directory == null) {
                     fireError("Metadata directory not found in file " + file.getAbsolutePath());
-                } else {
-                    Date date  = directory.getDate(ExifIFD0Directory.TAG_DATETIME);
-                    Locale plLocale = new Locale("pl", "PL");
-                    DateFormatter formatter = new DateFormatter(DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, plLocale));
-
-                    System.out.println("Renaming " + file.getAbsolutePath());
-
-                    File newNamedFile = new File(file.getParentFile(), formatter.valueToString(date).replace(":", "_") + ".jpg");
-
-                    Path source = Paths.get(file.getAbsolutePath());
-                    Path dest = Paths.get(newNamedFile.getAbsolutePath());
-
-                    Files.move(source, dest);
+                    continue;
                 }
+
+                Date date  = directory.getDate(ExifIFD0Directory.TAG_DATETIME);
+                if (date == null) {
+                    fireError("Date null in file " + file.getAbsolutePath());
+                    continue;
+                }
+
+                System.out.println("Renaming " + file.getAbsolutePath());
+
+                String newFileName = namer.produceNewFileName(file.getName(), LocalDateTime.fromDateFields(date));
+
+                Path source = Paths.get(file.getAbsolutePath());
+                Path dest = Paths.get(file.getParent(), newFileName);
+
+                Files.move(source, dest);
 			} catch (ImageProcessingException e) {
                 fireError("Looks like " + file.getAbsolutePath() + " is not a JPG");
 			} catch (ParseException e) {
