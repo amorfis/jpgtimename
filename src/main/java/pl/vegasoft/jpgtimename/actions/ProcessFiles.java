@@ -68,14 +68,8 @@ public class ProcessFiles extends AbstractAction {
 		for(File file : filesToChange) {
 			try {
 				Metadata metadata = ImageMetadataReader.readMetadata(file);
-                Directory directory = getDirectory(metadata, DIRECTORY_CLASSES);
+                Date date = tryToGetDateTimeFromMetadata(metadata, DIRECTORY_CLASSES);
 
-                if (directory == null) {
-                    fireError("Metadata directory not found in file " + file.getAbsolutePath());
-                    continue;
-                }
-
-                Date date  = directory.getDate(ExifIFD0Directory.TAG_DATETIME);
                 if (date == null) {
                     fireError("Date null in file " + file.getAbsolutePath());
                     continue;
@@ -103,12 +97,15 @@ public class ProcessFiles extends AbstractAction {
 		System.out.println("Finished");
 	}
 
-    private Directory getDirectory(Metadata metadata, List<Class<? extends Directory>> directoryClasses) {
+    private Date tryToGetDateTimeFromMetadata(Metadata metadata, List<Class<? extends Directory>> directoryClasses) {
         for(Class<? extends Directory> dirClass : directoryClasses) {
             Directory directory = metadata.getDirectory(dirClass);
-            if (directory != null) {
-                return directory;
-            }
+            if (directory == null) continue;
+
+            Date date  = directory.getDate(ExifIFD0Directory.TAG_DATETIME);
+            if (date == null) continue;
+
+            return date;
         }
 
         return null;
