@@ -4,12 +4,15 @@ import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
+import com.drew.metadata.Tag;
 import com.drew.metadata.exif.CanonMakernoteDirectory;
 import com.drew.metadata.exif.ExifIFD0Directory;
 import com.drew.metadata.jpeg.JpegDirectory;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.LocalDateTime;
 import pl.vegasoft.jpgtimename.FileListModel;
+import pl.vegasoft.jpgtimename.readers.ExifIFD0Reader;
+import pl.vegasoft.jpgtimename.tools.AbstractMetadataDirectoryReader;
 import pl.vegasoft.jpgtimename.tools.FileNamer;
 
 import javax.swing.*;
@@ -29,10 +32,9 @@ public class ProcessFiles extends AbstractAction {
     private FileNamer namer;
 
     private List<ErrorsListener> m_errorListeners = new CopyOnWriteArrayList<ErrorsListener>();
-    private static final List<Class<? extends Directory>> DIRECTORY_CLASSES = ImmutableList.<Class<? extends Directory>>of(
-            ExifIFD0Directory.class,
-            CanonMakernoteDirectory.class,
-            JpegDirectory.class
+
+    private final List<? extends AbstractMetadataDirectoryReader> READERS = ImmutableList.of(
+            new ExifIFD0Reader()
     );
 
     public ProcessFiles(FileListModel model, FileNamer namer) {
@@ -68,7 +70,7 @@ public class ProcessFiles extends AbstractAction {
 		for(File file : filesToChange) {
 			try {
 				Metadata metadata = ImageMetadataReader.readMetadata(file);
-                Date date = tryToGetDateTimeFromMetadata(metadata, DIRECTORY_CLASSES);
+                Date date = tryToGetDateTimeFromMetadata(metadata);
 
                 if (date == null) {
                     fireError("Date null in file " + file.getAbsolutePath());
@@ -97,15 +99,13 @@ public class ProcessFiles extends AbstractAction {
 		System.out.println("Finished");
 	}
 
-    private Date tryToGetDateTimeFromMetadata(Metadata metadata, List<Class<? extends Directory>> directoryClasses) {
-        for(Class<? extends Directory> dirClass : directoryClasses) {
-            Directory directory = metadata.getDirectory(dirClass);
-            if (directory == null) continue;
+    private Date tryToGetDateTimeFromMetadata(Metadata metadata) {
+        for(AbstractMetadataDirectoryReader reader : READERS) {
+            Date date = reader.tryGetPhotoTakenDate(metadata);
 
-            Date date  = directory.getDate(ExifIFD0Directory.TAG_DATETIME);
-            if (date == null) continue;
-
-            return date;
+            if (date != null) {
+                return date;
+            }
         }
 
         return null;
